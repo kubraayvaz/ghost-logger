@@ -1,0 +1,429 @@
+# Ghost Logger API - Contract-First OpenAPI Specification
+
+openapi: 3.0.3
+info:
+  title: Ghost Logger API
+  description: |
+    High-Performance Logging Service with Hexagonal Architecture
+    
+    ## Features
+    - Batch log ingestion with polymorphic log types
+    - Distributed tracing with TraceContext
+    - Rate limiting and circuit breaking
+    - Asynchronous processing with Virtual Threads
+    
+    ## Log Types
+    - **ErrorLog**: Captures error events with exception details
+    - **AuditLog**: Captures user actions and security events
+    - **MetricLog**: Captures performance metrics and KPIs
+    
+  version: 1.0.0
+  contact:
+    name: Ghost Logger Team
+    email: support@ghostlogger.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.ghostlogger.com/v1
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Log Ingestion
+    description: High-performance log ingestion endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health Check
+      description: Returns the current health status of the service
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /logs/ingest:
+    post:
+      tags:
+        - Log Ingestion
+      summary: Batch Log Ingestion
+      description: |
+        Accepts a batch of log entries for asynchronous processing.
+        Supports polymorphic log types: ErrorLog, AuditLog, and MetricLog.
+        
+        ## Processing Model
+        - Returns 202 Accepted immediately with a tracking batchId
+        - Logs are processed asynchronously using Virtual Threads
+        - TraceContext is propagated for distributed tracing
+        
+        ## Rate Limiting
+        - Default: 1000 requests per minute
+        - Returns 429 Too Many Requests when exceeded
+        
+        ## Idempotency
+        - Use `Idempotency-Key` header for guaranteed exactly-once processing
+        
+      operationId: ingestLogs
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Optional idempotency key for exactly-once processing
+          required: false
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LogEntryRequest'
+              minItems: 1
+              maxItems: 1000
+            examples:
+              errorLogBatch:
+                summary: Error Log Batch
+                value:
+                  - type: ERROR
+                    message: "NullPointerException in UserService"
+                    source: "com.example.UserService"
+                    timestamp: "2025-12-26T10:30:00Z"
+                    traceContext:
+                      traceId: "trace-123"
+                      spanId: "span-456"
+                      correlationId: "corr-789"
+                      userId: "user-001"
+                    severity: "ERROR"
+                    exceptionType: "java.lang.NullPointerException"
+                    stackTrace: "at com.example.UserService.getUser(UserService.java:42)"
+              
+              auditLogBatch:
+                summary: Audit Log Batch
+                value:
+                  - type: AUDIT
+                    message: "User deleted account"
+                    source: "AccountService"
+                    timestamp: "2025-12-26T10:35:00Z"
+                    traceContext:
+                      traceId: "trace-124"
+                      spanId: "span-457"
+                      correlationId: "corr-790"
+                      userId: "user-002"
+                    userId: "user-002"
+                    action: "DELETE_ACCOUNT"
+                    resourceType: "USER"
+                    resourceId: "user-002"
+                    metadata:
+                      ip: "192.168.1.100"
+                      userAgent: "Mozilla/5.0"
+              
+              metricLogBatch:
+                summary: Metric Log Batch
+                value:
+                  - type: METRIC
+                    message: "API response time"
+                    source: "ApiGateway"
+                    timestamp: "2025-12-26T10:40:00Z"
+                    traceContext:
+                      traceId: "trace-125"
+                      spanId: "span-458"
+                      correlationId: "corr-791"
+                    metricName: "api.response.time"
+                    value: 245.5
+                    unit: "milliseconds"
+                    tags:
+                      endpoint: "/api/users"
+                      method: "GET"
+                      status: "200"
+      
+      responses:
+        '202':
+          description: Logs accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogIngestResponse'
+              example:
+                batchId: "batch-550e8400-e29b-41d4-a716-446655440000"
+                totalReceived: 3
+                totalAccepted: 3
+                totalRejected: 0
+                errors: []
+                receivedAt: "2025-12-26T10:45:00Z"
+                status: "ACCEPTED"
+        
+        '400':
+          description: Invalid input - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-26T10:45:00Z"
+                status: 400
+                error: "Bad Request"
+                message: "Validation failed"
+                path: "/api/v1/logs/ingest"
+                errors:
+                  - field: "message"
+                    message: "Message cannot be blank"
+        
+        '422':
+          description: Unprocessable Entity - business logic validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-26T10:45:00Z"
+                status: 422
+                error: "Unprocessable Entity"
+                message: "Invalid log entry: severity must be a valid LogLevel"
+                path: "/api/v1/logs/ingest"
+        
+        '429':
+          description: Too Many Requests - rate limit exceeded
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying
+              schema:
+                type: integer
+              example: 60
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-26T10:45:00Z"
+                status: 429
+                error: "Too Many Requests"
+                message: "Log ingestion rate limit exceeded. Please retry later."
+                path: "/api/v1/logs/ingest"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "UP"
+        message:
+          type: string
+          example: "Ghost Logger is running"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-12-26T10:00:00Z"
+      required:
+        - status
+        - message
+        - timestamp
+
+    LogEntryRequest:
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          ERROR: '#/components/schemas/ErrorLogRequest'
+          AUDIT: '#/components/schemas/AuditLogRequest'
+          METRIC: '#/components/schemas/MetricLogRequest'
+      required:
+        - type
+        - message
+        - source
+      properties:
+        type:
+          type: string
+          enum: [ERROR, AUDIT, METRIC]
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        source:
+          type: string
+          minLength: 1
+          maxLength: 255
+        timestamp:
+          type: string
+          format: date-time
+        traceContext:
+          $ref: '#/components/schemas/TraceContextRequest'
+      oneOf:
+        - $ref: '#/components/schemas/ErrorLogRequest'
+        - $ref: '#/components/schemas/AuditLogRequest'
+        - $ref: '#/components/schemas/MetricLogRequest'
+
+    ErrorLogRequest:
+      allOf:
+        - $ref: '#/components/schemas/LogEntryRequest'
+        - type: object
+          required:
+            - severity
+          properties:
+            severity:
+              type: string
+              enum: [TRACE, DEBUG, INFO, WARN, ERROR, FATAL]
+            exceptionType:
+              type: string
+              maxLength: 255
+            stackTrace:
+              type: string
+              maxLength: 10000
+
+    AuditLogRequest:
+      allOf:
+        - $ref: '#/components/schemas/LogEntryRequest'
+        - type: object
+          required:
+            - userId
+            - action
+          properties:
+            userId:
+              type: string
+              minLength: 1
+              maxLength: 255
+            action:
+              type: string
+              minLength: 1
+              maxLength: 255
+            resourceType:
+              type: string
+              maxLength: 255
+            resourceId:
+              type: string
+              maxLength: 255
+            metadata:
+              type: object
+              additionalProperties:
+                type: string
+
+    MetricLogRequest:
+      allOf:
+        - $ref: '#/components/schemas/LogEntryRequest'
+        - type: object
+          required:
+            - metricName
+            - value
+            - unit
+          properties:
+            metricName:
+              type: string
+              minLength: 1
+              maxLength: 255
+            value:
+              type: number
+              format: double
+            unit:
+              type: string
+              minLength: 1
+              maxLength: 50
+            tags:
+              type: object
+              additionalProperties:
+                type: string
+
+    TraceContextRequest:
+      type: object
+      properties:
+        traceId:
+          type: string
+          example: "trace-123"
+        spanId:
+          type: string
+          example: "span-456"
+        correlationId:
+          type: string
+          example: "corr-789"
+        userId:
+          type: string
+          example: "user-001"
+
+    LogIngestResponse:
+      type: object
+      required:
+        - batchId
+        - totalReceived
+        - totalAccepted
+        - totalRejected
+        - errors
+        - receivedAt
+        - status
+      properties:
+        batchId:
+          type: string
+          format: uuid
+          description: Unique identifier for tracking this batch
+        totalReceived:
+          type: integer
+          description: Total number of logs received
+        totalAccepted:
+          type: integer
+          description: Number of logs accepted for processing
+        totalRejected:
+          type: integer
+          description: Number of logs rejected due to validation errors
+        errors:
+          type: array
+          items:
+            type: string
+          description: List of validation errors for rejected logs
+        receivedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the batch was received
+        status:
+          type: string
+          enum: [ACCEPTED, PARTIAL, REJECTED]
+          description: Overall status of the batch
+
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-based authentication (OAuth2)
+
+security:
+  - bearerAuth: []

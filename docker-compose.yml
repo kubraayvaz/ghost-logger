@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ghost-logger-db
+    environment:
+      POSTGRES_DB: ghostlogger
+      POSTGRES_USER: ghostlogger
+      POSTGRES_PASSWORD: ghostlogger_secret
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ghost-logger-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghostlogger -d ghostlogger"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ghost-logger-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ghostlogger.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    networks:
+      - ghost-logger-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ghost-logger-network:
+    driver: bridge
