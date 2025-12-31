@@ -4,7 +4,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen?logo=spring)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Experimental project demonstrating the outcomes of GitHub Copilot custom coding agents**. Showcases Virtual Threads, Sealed Interfaces, Structured Concurrency, and Hexagonal Architecture patterns.
+**Experimental project demonstrating the outcomes of GitHub Copilot custom coding agents**. 
 
 > ⚠️ **Project Status**: Experimental / Proof of Concept  
 > Not production-ready. In-memory storage only. No authentication or persistence layer.
@@ -28,14 +28,14 @@
 
 ## 🎯 Purpose
 
-This project demonstrates modern Java development patterns:
+This project demonstrates modern Java development patterns as an outcome of GitHub Copilot custom coding agents. It serves as a learning resource and example project to showcase how Copilot can assist in:
 
-1. **Java 21 Features**: Virtual Threads, Sealed Interfaces, Records, Pattern Matching
-2. **Hexagonal Architecture**: Clean separation of domain, API, and infrastructure layers
-3. **Type-Safe Design**: Sealed interfaces eliminate runtime classification errors
-4. **Structured Concurrency**: Parallel processing with `StructuredTaskScope` (Preview Feature)
+1. **Accelerating Development**: Automating repetitive tasks and generating boilerplate code.
+2. **Enhancing Productivity**: Providing intelligent suggestions for complex implementations.
+3. **Exploring Modern Java Features**: Virtual Threads, Sealed Interfaces, Records, Pattern Matching.
+4. **Architectural Patterns**: Implementing Hexagonal Architecture with clean separation of concerns.
 
-**Target Audience**: Java developers learning modern language features and architectural patterns.
+**Target Audience**: Java developers and enthusiasts exploring the potential of AI-assisted development tools like GitHub Copilot.
 
 ---
 
@@ -51,6 +51,7 @@ This project demonstrates modern Java development patterns:
 - ✅ **OpenAPI 3.0**: Auto-generated Swagger UI at `/swagger-ui.html`
 - ✅ **Spring Actuator**: Health check endpoint at `/actuator/health`
 - ✅ **Rate Limiting**: Basic `@RateLimiter` annotation (configured but basic implementation)
+- ✅ **Custom Logback Appender**: Demonstrates Copilot-assisted implementation of a custom Logback appender for sending logs to a server endpoint using Java 21 virtual threads.
 
 ### Infrastructure
 - ✅ **In-Memory Storage**: `ConcurrentHashMap`-based repository for demo purposes
@@ -135,7 +136,38 @@ com.ghostlogger
 
 ---
 
+
 ## ⚡ Quick Start
+
+### Client Sample Usage
+
+You can use the `ghost-logger-client-sample` module to ship logs from any Java application to the Ghost Logger server via HTTP using a resilient, non-blocking Logback appender.
+
+### 🚦 How to Run the Client Sample
+
+1. **Start the Ghost Logger server** (in a separate terminal):
+  ```bash
+  mvn -pl ghost-logger-server spring-boot:run
+  ```
+
+2. **Build the client sample module:**
+  ```bash
+  mvn clean package -pl ghost-logger-client-sample -DskipTests
+  ```
+
+3. **Run the client sample app:**
+  ```bash
+  java --enable-preview -cp ghost-logger-client-sample/target/ghost-logger-client-sample-1.0.0-SNAPSHOT.jar com.ghostlogger.client.ClientSampleApp
+  ```
+
+  - The `--enable-preview` flag is required for Java 21 virtual threads.
+  - You should see log output in the server console and successful ingestion responses.
+
+4. **Verify logs on the server:**
+  - Check the Ghost Logger server logs or use the API to confirm logs were received.
+
+---
+
 
 ### Prerequisites
 - **Java 21+** (with preview features enabled)
@@ -146,7 +178,7 @@ com.ghostlogger
 
 ```bash
 # 1. Clone the repository
-git clone <your-repository-url>
+git clone <repository-url>
 cd ghost-logger
 
 # 2. Build and run (PostgreSQL not required - using in-memory storage)
@@ -157,12 +189,13 @@ mvn spring-boot:run
 curl -X POST http://localhost:8080/api/v1/logs/ingest \
   -H "Content-Type: application/json" \
   -d '{
-    "entries": [
+    "logs": [
       {
         "type": "ERROR",
         "message": "Database connection timeout",
-        "severity": "HIGH",
-        "exceptionClass": "java.sql.SQLException",
+        "source": "app-server-1",
+        "severity": "ERROR",
+        "exceptionType": "java.sql.SQLException",
         "stackTrace": "at com.example.DB.connect(...)"
       }
     ]
@@ -200,7 +233,7 @@ curl -X POST http://localhost:8080/api/v1/logs/ingest \
 curl -X POST http://localhost:8080/api/v1/logs/ingest \
   -H "Content-Type: application/json" \
   -d '{
-    "entries": [
+    "logs": [
       {
         "type": "AUDIT",
         "message": "User login successful",
@@ -232,70 +265,32 @@ curl -X POST http://localhost:8080/api/v1/logs/ingest \
 # Basic health check
 curl http://localhost:8080/api/v1/health
 
-# Spring Actuator health
-curl http://localhost:8080/actuator/health
 ```
-
-### Metrics
-```bash
-# Available actuator endpoints
-curl http://localhost:8080/actuator
-
-# JVM metrics
-curl http://localhost:8080/actuator/metrics/jvm.threads.live
-```
-
-### Distributed Tracing (Planned)
-`TraceContext` model exists in codebase but not yet integrated with external tracing systems:
-```java
-// Currently logs trace context locally
-TraceContext context = TraceContext.current();
-log.info("Processing log [traceId={}]", context.traceId());
-```
-
 ---
 
-## �️ Development Roadmap
+## 🛠️ Development Roadmap
 
-### Phase 1: Foundation (✅ Complete)
-- [x] Hexagonal architecture setup
-- [x] Sealed interfaces for log types
-- [x] Virtual Threads enabled
-- [x] Structured Concurrency (Preview)
-- [x] OpenAPI documentation
-- [x] In-memory storage
+### Community Engagement
 
-### Phase 2: Persistence (📋 Planned)
-- [ ] PostgreSQL integration with JPA
-- [ ] Flyway database migrations
-- [ ] Entity mappings for log types
-- [ ] Connection pooling optimization
+This project is an experimental showcase of GitHub Copilot's capabilities. We encourage the community to:
 
-### Phase 3: Resilience (📋 Planned)
-- [ ] Implement circuit breakers for external calls
-- [ ] Add retry logic with exponential backoff
-- [ ] Rate limiting per client
-- [ ] Bulkhead patterns
+- **Experiment**: Use GitHub Copilot to extend the project with new features or refactor existing code.
+- **Contribute**: Share your enhancements, bug fixes, or creative ideas through pull requests.
+- **Learn**: Explore how Copilot assists in implementing modern Java features and architectural patterns.
 
-### Phase 4: Observability (📋 Planned)
-- [ ] Distributed tracing (Zipkin/Jaeger)
-- [ ] Prometheus metrics
-- [ ] Custom business metrics
-- [ ] Performance benchmarking
+### Get Involved
 
-### Phase 5: Security (📋 Planned)
-- [ ] OAuth 2.0 / JWT authentication
-- [ ] Role-based access control
-- [ ] API key management
-- [ ] TLS/HTTPS configuration
+- Fork the repository and try adding a new feature using GitHub Copilot.
+- Share your experience and insights with the community.
+- Help improve the project by reporting issues or suggesting improvements.
+
+Together, let's explore the potential of AI-assisted development!
 
 ---
 
 ## 📚 Documentation
 
 - **[DEVELOPMENT.md](DEVELOPMENT.md)**: Local setup, testing, architecture decisions
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**: Common errors and solutions
-- **[API_IMPLEMENTATION.md](API_IMPLEMENTATION.md)**: REST API design rationale
 - **OpenAPI Spec**: Available at `/api-docs` when running the application
 
 ---
@@ -327,86 +322,6 @@ Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) file for detai
 
 ---
 
----
+## ⚠️ Disclaimer
 
-**Experimental project demonstrating the outcomes of GitHub Copilot custom coding agents**
-
-For questions or contributions, please open an issue in the repository.
-- `404 Not Found` - Resource not found
-- `422 Unprocessable Entity` - Business logic validation error
-- `429 Too Many Requests` - Rate limit exceeded
-
-### Idempotency
-- `GET`, `PUT`, `DELETE` are idempotent
-- `POST` with Idempotency-Key header for non-idempotent operations
-
-### Pagination & Filtering
-- Use query parameters: `?page=0&size=20`
-- Return metadata in responses
-
-## Resilience Patterns
-
-### Circuit Breaker (Resilience4j)
-Protects against cascading failures when external services are down.
-
-```yaml
-resilience4j.circuitbreaker:
-  instances:
-    ghostLoggerService:
-      failureRateThreshold: 50
-      waitDurationInOpenState: 10s
-```
-
-### Rate Limiting
-Prevents API abuse by limiting requests per time window.
-
-```yaml
-resilience4j.ratelimiter:
-  instances:
-    ghostLoggerApi:
-      limitForPeriod: 100
-      limitRefreshPeriod: 1s
-```
-
-## Testing Strategy
-
-### Unit Tests
-Test domain logic in isolation:
-```bash
-mvn test
-```
-
-### Integration Tests with Testcontainers
-Test with real PostgreSQL database:
-```bash
-mvn verify
-```
-
-## Database Schema
-
-The project uses PostgreSQL. Schema migrations can be managed with:
-- **Flyway** (recommended for production)
-- **Liquibase** (alternative)
-
-## Future Enhancements
-
-- [ ] JPA Entity implementation for PostgreSQL persistence
-- [ ] Flyway migrations for database versioning
-- [ ] JWT/OAuth2 authentication
-- [ ] HATEOAS links for resource navigation
-- [ ] ETag support for caching
-- [ ] Kafka integration for async log streaming
-- [ ] Metrics & Distributed Tracing (Micrometer/Zipkin)
-
-## Contributing
-
-Follow these guidelines:
-1. Use Java 21 Records for immutable DTOs
-2. Constructor injection only (no `@Autowired` on fields)
-3. Keep domain logic framework-agnostic
-4. Write integration tests with Testcontainers
-5. Document all public APIs with OpenAPI annotations
-
-## License
-
-Apache 2.0
+All code in this project has been generated by AI using GitHub Copilot. While every effort has been made to ensure functionality and accuracy, this project is intended as an experimental showcase of AI-assisted development. Use at your own discretion.

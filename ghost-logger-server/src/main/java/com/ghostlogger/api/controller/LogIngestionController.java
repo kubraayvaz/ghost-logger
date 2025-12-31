@@ -1,5 +1,20 @@
 package com.ghostlogger.api.controller;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.ghostlogger.api.dto.request.AuditLogRequest;
 import com.ghostlogger.api.dto.request.ErrorLogRequest;
 import com.ghostlogger.api.dto.request.LogBatchRequest;
@@ -12,6 +27,7 @@ import com.ghostlogger.domain.model.LogEntry;
 import com.ghostlogger.domain.model.MetricLog;
 import com.ghostlogger.domain.model.TraceContext;
 import com.ghostlogger.domain.service.LogIngestionService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,18 +35,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Log Ingestion Controller (Contract-First REST API)
@@ -49,6 +53,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/logs")
 @Tag(name = "Log Ingestion", description = "High-Performance Log Ingestion Endpoints")
 public final class LogIngestionController {
+
+    private static final Logger logger = LoggerFactory.getLogger(LogIngestionController.class);
 
     private final LogIngestionService logIngestionService;
 
@@ -120,23 +126,27 @@ public final class LogIngestionController {
     public ResponseEntity<LogIngestResponse> ingestLogs(
         @Valid @RequestBody LogBatchRequest request
     ) {
+        logger.info("Received log ingestion request: {}", request);
+
         // Generate batchId for tracking
         String batchId = UUID.randomUUID().toString();
         List<LogEntryRequest> logEntries = request.logs();
-        
+
         // Extract or create TraceContext from the first entry
         TraceContext traceContext = extractTraceContext(logEntries);
-        
+
         // Process logs within the trace context scope
         try {
             LogIngestResponse response = TraceContext.callWithContext(
                 traceContext,
                 () -> processLogEntries(batchId, logEntries, traceContext)
             );
-            
+
+            logger.info("Successfully processed log batch with ID: {}", batchId);
             // Return 202 Accepted for async processing
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
         } catch (Exception e) {
+            logger.error("Failed to process log entries", e);
             throw new RuntimeException("Failed to process log entries", e);
         }
     }
@@ -148,10 +158,10 @@ public final class LogIngestionController {
         if (logEntries.isEmpty()) {
             return TraceContext.create();
         }
-        
+
         var firstEntry = logEntries.get(0);
         var traceContextReq = firstEntry.traceContext();
-        
+
         if (traceContextReq != null) {
             return new TraceContext(
                 traceContextReq.traceId(),
@@ -160,7 +170,7 @@ public final class LogIngestionController {
                 traceContextReq.userId()
             );
         }
-        
+
         return TraceContext.create();
     }
 
@@ -172,10 +182,10 @@ public final class LogIngestionController {
         List<LogEntryRequest> logEntries,
         TraceContext traceContext
     ) throws Exception {
-        
+
         List<LogEntry> domainLogs = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        
+
         // Convert DTOs to domain models
         for (int i = 0; i < logEntries.size(); i++) {
             try {
@@ -185,10 +195,10 @@ public final class LogIngestionController {
                 errors.add("Entry %d: %s".formatted(i, e.getMessage()));
             }
         }
-        
+
         // Delegate to service layer for business logic and persistence
         int totalAccepted = logIngestionService.ingestBatch(domainLogs);
-        
+
         // Build response
         if (errors.isEmpty()) {
             return LogIngestResponse.success(batchId, totalAccepted);
@@ -211,7 +221,7 @@ public final class LogIngestionController {
     private LogEntry convertToDomain(LogEntryRequest request, TraceContext traceContext) {
         Instant timestamp = request.timestamp() != null ? request.timestamp() : Instant.now();
         UUID id = UUID.randomUUID();
-        
+
         return switch (request) {
             case ErrorLogRequest errorReq -> new ErrorLog(
                 id,
@@ -223,7 +233,7 @@ public final class LogIngestionController {
                 errorReq.exceptionType(),
                 errorReq.stackTrace()
             );
-            
+
             case AuditLogRequest auditReq -> new AuditLog(
                 id,
                 auditReq.message(),
@@ -236,7 +246,7 @@ public final class LogIngestionController {
                 auditReq.resourceId(),
                 auditReq.metadata()
             );
-            
+
             case MetricLogRequest metricReq -> new MetricLog(
                 id,
                 metricReq.message(),

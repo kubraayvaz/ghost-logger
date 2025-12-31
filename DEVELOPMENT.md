@@ -701,8 +701,6 @@ resilience4j:
         limit-for-period: 500
 ```
 
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for more issues.
-
 ---
 
 ## 🤝 Contributing
