@@ -1,7 +1,7 @@
 package com.ghostlogger.infrastructure.adapter;
 
-import com.ghostlogger.domain.model.LogEntry;
-import com.ghostlogger.domain.port.StorageService;
+import com.ghostlogger.core.domain.model.LogEntry;
+import com.ghostlogger.core.domain.port.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

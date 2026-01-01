@@ -1,6 +1,6 @@
 package com.ghostlogger.api.controller;
 
-import com.ghostlogger.api.dto.response.HealthResponse;
+import com.ghostlogger.core.api.dto.response.HealthResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

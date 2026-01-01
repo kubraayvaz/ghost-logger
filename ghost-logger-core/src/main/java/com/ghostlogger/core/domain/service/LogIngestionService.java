@@ -1,11 +1,11 @@
-package com.ghostlogger.domain.service;
+package com.ghostlogger.core.domain.service;
 
-import com.ghostlogger.domain.model.AuditLog;
-import com.ghostlogger.domain.model.ErrorLog;
-import com.ghostlogger.domain.model.LogEntry;
-import com.ghostlogger.domain.model.MetricLog;
-import com.ghostlogger.domain.model.TraceContext;
-import com.ghostlogger.domain.port.LogRepository;
+import com.ghostlogger.core.domain.model.AuditLog;
+import com.ghostlogger.core.domain.model.ErrorLog;
+import com.ghostlogger.core.domain.model.LogEntry;
+import com.ghostlogger.core.domain.model.MetricLog;
+import com.ghostlogger.core.domain.model.TraceContext;
+import com.ghostlogger.core.domain.port.LogRepository;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

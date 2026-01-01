@@ -1,4 +1,4 @@
-package com.ghostlogger.api.dto.request;
+package com.ghostlogger.core.api.dto.request;
 
 /**
  * Trace Context Request DTO

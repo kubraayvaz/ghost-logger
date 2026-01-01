@@ -1,4 +1,4 @@
-package com.ghostlogger.domain.model;
+package com.ghostlogger.core.domain.model;
 
 import java.time.Instant;
 import java.util.Map;

@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
-import com.ghostlogger.domain.model.LogEntry;
-import com.ghostlogger.domain.port.LogRepository;
+import com.ghostlogger.core.domain.model.LogEntry;
+import com.ghostlogger.core.domain.port.LogRepository;
 
 /**
  * In-Memory Log Repository Adapter

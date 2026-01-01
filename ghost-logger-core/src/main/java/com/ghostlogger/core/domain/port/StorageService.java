@@ -1,6 +1,6 @@
-package com.ghostlogger.domain.port;
+package com.ghostlogger.core.domain.port;
 
-import com.ghostlogger.domain.model.LogEntry;
+import com.ghostlogger.core.domain.model.LogEntry;
 
 /**
  * Storage Service Port - Hexagonal Architecture

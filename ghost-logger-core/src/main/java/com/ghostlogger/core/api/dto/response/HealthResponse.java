@@ -1,4 +1,4 @@
-package com.ghostlogger.api.dto.response;
+package com.ghostlogger.core.api.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

@@ -1,4 +1,4 @@
-package com.ghostlogger.api.dto.response;
+package com.ghostlogger.core.api.dto.response;
 
 import java.time.Instant;
 import java.util.List;

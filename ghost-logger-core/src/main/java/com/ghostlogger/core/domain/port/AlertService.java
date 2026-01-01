@@ -1,6 +1,6 @@
-package com.ghostlogger.domain.port;
+package com.ghostlogger.core.domain.port;
 
-import com.ghostlogger.domain.model.ErrorLog;
+import com.ghostlogger.core.domain.model.ErrorLog;
 
 /**
  * Alert Service Port - Hexagonal Architecture
