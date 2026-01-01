@@ -18,9 +18,6 @@ info:
     - **MetricLog**: Captures performance metrics and KPIs
     
   version: 1.0.0
-  contact:
-    name: Ghost Logger Team
-    email: support@ghostlogger.com
 
 servers:
   - url: http://localhost:8080/api/v1
