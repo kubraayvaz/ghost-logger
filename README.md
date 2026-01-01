@@ -75,40 +75,53 @@ This project demonstrates modern Java development patterns as an outcome of GitH
 
 ```mermaid
 graph LR
-    A[HTTP Client] -->|POST /logs/ingest| B[LogIngestionController]
-    B --> C[LogIngestionService]
-    C --> D[StructuredLogProcessor]
+    A[HTTP Client] -->|POST /logs/ingest| B[LogIngestionController<br/>server module]
+    B --> C[LogIngestionService<br/>core module]
+    C --> D[StructuredLogProcessor<br/>core module]
     D -->|Pattern Match| E{Log Type?}
-    E -->|ErrorLog| F[AlertService]
-    E -->|AuditLog| G[StorageService]
+    E -->|ErrorLog| F[AlertService Port<br/>core]
+    E -->|AuditLog| G[StorageService Port<br/>core]
     E -->|MetricLog| G
-    F -.->|TODO| H[External Alerting]
-    G --> I[InMemoryLogRepository]
-    I -.->|Future| J[(PostgreSQL)]
+    F -.->|Implemented by| H[DefaultAlertService<br/>server]
+    G -.->|Implemented by| I[DefaultStorageService<br/>server]
+    H --> J[InMemoryLogRepository<br/>server]
+    I --> J
+    J -.->|Future| K[(PostgreSQL)]
     
-    style H stroke-dasharray: 5 5
-    style J stroke-dasharray: 5 5
+    style K stroke-dasharray: 5 5
 ```
 
 *Note: Dashed lines indicate planned features not yet implemented*
 
-### Package Structure (Hexagonal Layers)
+### Module Structure (Multi-Module Maven Project)
 
 ```
-com.ghostlogger
-├── api/                       # 🌐 API Layer (Inbound Adapters)
-│   ├── controller/            # REST Controllers (Spring MVC)
-│   ├── dto/                   # Data Transfer Objects (Records)
-│   └── exception/             # Global Exception Handlers
+ghost-logger/                   # 📦 Parent POM
 │
-├── domain/                    # 💎 Domain Layer (Core Business Logic)
-│   ├── model/                 # Domain Models (Sealed Interfaces, Records)
-│   ├── port/                  # Ports (Interfaces for Adapters)
-│   └── service/               # Domain Services (Pure Java Logic)
+├── ghost-logger-core/         # 💎 Core Domain Module (Framework-Agnostic)
+│   └── com.ghostlogger.core
+│       ├── api/
+│       │   └── dto/           # Data Transfer Objects (Records)
+│       │       ├── request/   # Request DTOs (ErrorLogRequest, etc.)
+│       │       └── response/  # Response DTOs (LogIngestResponse, etc.)
+│       └── domain/
+│           ├── model/         # Domain Models (Sealed Interfaces, Records)
+│           ├── port/          # Ports/Interfaces (LogRepository, AlertService)
+│           └── service/       # Domain Services (LogIngestionService, etc.)
 │
-└── infrastructure/            # 🔌 Infrastructure Layer (Outbound Adapters)
-    ├── adapter/               # Adapter Implementations (DB, External APIs)
-    └── config/                # Spring Configuration
+├── ghost-logger-server/       # 🌐 Server Module (Spring Boot Application)
+│   └── com.ghostlogger
+│       ├── api/
+│       │   └── controller/    # REST Controllers (Spring MVC)
+│       ├── infrastructure/
+│       │   ├── adapter/       # Port Implementations (InMemoryLogRepository)
+│       │   └── config/        # Spring Configuration
+│       └── GhostLoggerApplication.java
+│
+└── ghost-logger-client-sample/ # 📤 Client Sample (Logback Appender Demo)
+    └── com.ghostlogger.client
+        ├── ClientSampleApp.java
+        └── LogbackHttpAppender.java
 ```
 
 **Architectural Decision Records (ADRs)**: See [DEVELOPMENT.md](DEVELOPMENT.md#architectural-decisions) for detailed rationale.
