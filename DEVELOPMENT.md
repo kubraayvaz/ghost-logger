@@ -119,7 +119,7 @@ java --enable-preview -jar target/ghost-logger-1.0.0-SNAPSHOT.jar
 
 ### Current Status
 
-⚠️ **Tests are partially implemented.**
+⚠️ **Tests are to be implemented.**
 
 ### Running Tests
 
