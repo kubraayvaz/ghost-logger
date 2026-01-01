@@ -205,10 +205,13 @@ curl -X POST http://localhost:8080/api/v1/logs/ingest \
 **Expected Response:**
 ```json
 {
-  "batchId": "a3b5c7d9-1234-5678-90ab-cdef12345678",
-  "status": "ACCEPTED",
-  "processedCount": 1,
-  "timestamp": "2025-12-26T10:30:00Z"
+  "batchId": "e618f831-5fc1-47a9-953e-98718b3422a1",
+  "totalReceived": 1,
+  "totalAccepted": 1,
+  "totalRejected": 0,
+  "errors": [],
+  "receivedAt": "2026-01-01T09:58:49.853135Z",
+  "status": "ACCEPTED"
 }
 ```
 
@@ -237,20 +240,35 @@ curl -X POST http://localhost:8080/api/v1/logs/ingest \
       {
         "type": "AUDIT",
         "message": "User login successful",
+        "source": "auth-service",
         "userId": "user-123",
         "action": "LOGIN",
-        "resource": "/api/auth/login",
-        "ipAddress": "192.168.1.100"
+        "resourceType": "AUTH",
+        "resourceId": "/api/auth/login"
       },
       {
         "type": "METRIC",
         "message": "Request latency recorded",
+        "source": "api-gateway",
         "metricName": "http.request.duration",
-        "metricValue": 125.5,
+        "value": 125.5,
         "unit": "milliseconds"
       }
     ]
   }'
+```
+
+**Response:**
+```json
+{
+  "batchId": "7186c37f-645d-495e-8f02-5c1e2f06213b",
+  "totalReceived": 2,
+  "totalAccepted": 2,
+  "totalRejected": 0,
+  "errors": [],
+  "receivedAt": "2026-01-01T10:00:03.488286Z",
+  "status": "ACCEPTED"
+}
 ```
 </details>
 
